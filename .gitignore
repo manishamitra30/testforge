@@ -1,0 +1,12 @@
+﻿# Build output
+target/
+
+# Dependencies
+node_modules/
+
+# Environment and sensitive data
+.env
+*.env
+*.pem
+*.key
+secret*
