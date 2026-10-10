@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: testforge
+  datasource:
+    url: jdbc:postgresql://localhost:5433/testforge
+    username: testforge
+    password: testforge
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
