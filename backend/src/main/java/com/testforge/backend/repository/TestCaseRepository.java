@@ -6,8 +6,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface TestCaseRepository extends JpaRepository<TestCase, Long> {
+public interface TestCaseRepository
+        extends JpaRepository<TestCase, Long>, JpaSpecificationExecutor<TestCase> {
 
     Page<TestCase> findBySuiteId(Long suiteId, Pageable pageable);
 

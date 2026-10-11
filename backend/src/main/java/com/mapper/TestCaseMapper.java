@@ -2,6 +2,7 @@ package com.testforge.backend.mapper;
 
 import com.testforge.backend.dto.TestCaseRequest;
 import com.testforge.backend.dto.TestCaseResponse;
+import com.testforge.backend.dto.TestCaseSummaryResponse;
 import com.testforge.backend.dto.TestStepDto;
 import com.testforge.backend.model.Priority;
 import com.testforge.backend.model.TestCase;
@@ -57,6 +58,17 @@ public class TestCaseMapper {
                 testCase.getCreatedAt(),
                 testCase.getUpdatedAt(),
                 steps);
+    }
+
+    public TestCaseSummaryResponse toSummary(TestCase testCase) {
+        return new TestCaseSummaryResponse(
+                testCase.getId(),
+                testCase.getSuite().getId(),
+                testCase.getTitle(),
+                testCase.getPriority(),
+                testCase.getStatus(),
+                testCase.getTags(),
+                testCase.getUpdatedAt());
     }
 
     private TestStep toStep(TestStepDto dto) {
