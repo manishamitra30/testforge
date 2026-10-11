@@ -29,6 +29,9 @@ public interface TestRunResultRepository extends JpaRepository<TestRunResult, Lo
     @EntityGraph(attributePaths = {"testCase", "executedBy"})
     List<TestRunResult> findByRunIdOrderByIdAsc(Long runId);
 
+    @EntityGraph(attributePaths = {"testCase", "run", "run.suite", "run.project", "run.project.owner"})
+    Optional<TestRunResult> findWithContextById(Long id);
+
     Optional<TestRunResult> findByIdAndRunId(Long id, Long runId);
 
     boolean existsByRunIdAndStatus(Long runId, ResultStatus status);
