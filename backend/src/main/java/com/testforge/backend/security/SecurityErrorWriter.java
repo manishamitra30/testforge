@@ -1,9 +1,9 @@
 package com.testforge.backend.security;
 
+import com.testforge.backend.common.exception.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.time.LocalDateTime;
 
 public final class SecurityErrorWriter {
 
@@ -17,7 +17,7 @@ public final class SecurityErrorWriter {
         response.setCharacterEncoding("UTF-8");
         String body = String.format(
                 "{\"timestamp\":\"%s\",\"status\":%d,\"error\":\"%s\",\"message\":\"%s\",\"path\":\"%s\"}",
-                LocalDateTime.now(), status, error, message, escape(request.getRequestURI()));
+                ApiError.now(), status, error, message, escape(request.getRequestURI()));
         response.getWriter().write(body);
     }
 

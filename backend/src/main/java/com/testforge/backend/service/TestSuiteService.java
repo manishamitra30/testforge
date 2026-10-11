@@ -2,7 +2,7 @@ package com.testforge.backend.service;
 
 import com.testforge.backend.dto.TestSuiteRequest;
 import com.testforge.backend.dto.TestSuiteResponse;
-import com.testforge.backend.exception.ResourceNotFoundException;
+import com.testforge.backend.common.exception.ResourceNotFoundException;
 import com.testforge.backend.mapper.TestSuiteMapper;
 import com.testforge.backend.model.Project;
 import com.testforge.backend.model.TestSuite;
@@ -36,7 +36,7 @@ public class TestSuiteService {
 
     public TestSuite getOwnedSuite(Long suiteId) {
         TestSuite suite = suiteRepository.findById(suiteId)
-                .orElseThrow(() -> new ResourceNotFoundException("Test suite " + suiteId + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Test suite with ID " + suiteId + " not found"));
         projectService.assertOwner(suite.getProject());
         return suite;
     }
