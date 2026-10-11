@@ -120,6 +120,7 @@ public class TestRunService {
                 ? null
                 : currentUserService.getCurrentUser());
 
+        resultRepository.flush();
         syncRunStatus(run);
         return mapper.toResultResponse(result);
     }
