@@ -81,6 +81,10 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.UNAUTHORIZED, "Authentication required", req, Map.of());
     }
 
+    @ExceptionHandler(ServiceBusyException.class)
+    public ResponseEntity<ApiError> busy(ServiceBusyException ex, HttpServletRequest req) {
+        return build(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage(), req, Map.of());
+    }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> unexpected(Exception ex, HttpServletRequest req) {
         log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);

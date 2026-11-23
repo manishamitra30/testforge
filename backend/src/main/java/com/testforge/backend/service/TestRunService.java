@@ -104,8 +104,8 @@ public class TestRunService {
     @Transactional
     public RunResultResponse updateResult(Long runId, Long resultId, UpdateResultRequest request) {
         TestRun run = getOwnedRun(runId);
-        if (run.getStatus() == RunStatus.ABORTED) {
-            throw new BadRequestException("Results of an aborted run cannot be changed");
+        if (run.getStatus() == RunStatus.ABORTED || run.getStatus() == RunStatus.QUEUED || run.getStatus() == RunStatus.RUNNING) {
+            throw new BadRequestException("Results of an aborted or still-running run cannot be changed");
         }
         TestRunResult result = resultRepository.findByIdAndRunId(resultId, runId)
                 .orElseThrow(() -> new ResourceNotFoundException(

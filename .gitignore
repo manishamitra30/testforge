@@ -12,3 +12,7 @@ node_modules/
 secret*
 
 *.log
+
+start-backend.ps1
+
+start-backend.ps1
