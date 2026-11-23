@@ -5,8 +5,8 @@ import com.testforge.backend.dto.RunDetailResponse;
 import com.testforge.backend.dto.RunResponse;
 import com.testforge.backend.dto.RunResultResponse;
 import com.testforge.backend.dto.UpdateResultRequest;
-import com.testforge.backend.exception.BadRequestException;
-import com.testforge.backend.exception.ResourceNotFoundException;
+import com.testforge.backend.common.exception.BadRequestException;
+import com.testforge.backend.common.exception.ResourceNotFoundException;
 import com.testforge.backend.mapper.TestRunMapper;
 import com.testforge.backend.model.ResultStatus;
 import com.testforge.backend.model.RunStatus;
@@ -104,8 +104,8 @@ public class TestRunService {
     @Transactional
     public RunResultResponse updateResult(Long runId, Long resultId, UpdateResultRequest request) {
         TestRun run = getOwnedRun(runId);
-        if (run.getStatus() == RunStatus.ABORTED) {
-            throw new BadRequestException("Results of an aborted run cannot be changed");
+        if (run.getStatus() == RunStatus.ABORTED || run.getStatus() == RunStatus.QUEUED || run.getStatus() == RunStatus.RUNNING) {
+            throw new BadRequestException("Results of an aborted or still-running run cannot be changed");
         }
         TestRunResult result = resultRepository.findByIdAndRunId(resultId, runId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -157,7 +157,7 @@ public class TestRunService {
 
     private TestRun getOwnedRun(Long id) {
         TestRun run = runRepository.findWithDetailsById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Test run " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Test run with ID " + id + " not found"));
         projectService.assertOwner(run.getProject());
         return run;
     }

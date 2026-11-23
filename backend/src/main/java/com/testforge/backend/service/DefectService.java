@@ -3,8 +3,8 @@ package com.testforge.backend.service;
 import com.testforge.backend.dto.CreateDefectRequest;
 import com.testforge.backend.dto.DefectResponse;
 import com.testforge.backend.dto.UpdateDefectRequest;
-import com.testforge.backend.exception.BadRequestException;
-import com.testforge.backend.exception.ResourceNotFoundException;
+import com.testforge.backend.common.exception.BadRequestException;
+import com.testforge.backend.common.exception.ResourceNotFoundException;
 import com.testforge.backend.mapper.DefectMapper;
 import com.testforge.backend.model.Defect;
 import com.testforge.backend.model.DefectStatus;
@@ -40,7 +40,7 @@ public class DefectService {
     public DefectResponse create(CreateDefectRequest request) {
         TestRunResult result = resultRepository.findWithContextById(request.testResultId())
                 .orElseThrow(() -> new ResourceNotFoundException(
-                        "Test result " + request.testResultId() + " not found"));
+                        "Test result with ID " + request.testResultId() + " not found"));
         TestRun run = result.getRun();
         projectService.assertOwner(run.getProject());
 
@@ -115,7 +115,7 @@ public class DefectService {
 
     private Defect getOwnedDefect(Long id) {
         Defect defect = defectRepository.findWithDetailsById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Defect " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Defect with ID " + id + " not found"));
         projectService.assertOwner(defect.getProject());
         return defect;
     }
@@ -125,7 +125,7 @@ public class DefectService {
             return null;
         }
         return userRepository.findById(assigneeId)
-                .orElseThrow(() -> new ResourceNotFoundException("User " + assigneeId + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User with ID " + assigneeId + " not found"));
     }
 
     private String defaultTitle(TestRunResult result) {

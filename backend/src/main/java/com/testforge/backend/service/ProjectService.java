@@ -2,7 +2,7 @@ package com.testforge.backend.service;
 
 import com.testforge.backend.dto.ProjectRequest;
 import com.testforge.backend.dto.ProjectResponse;
-import com.testforge.backend.exception.ResourceNotFoundException;
+import com.testforge.backend.common.exception.ResourceNotFoundException;
 import com.testforge.backend.mapper.ProjectMapper;
 import com.testforge.backend.model.Project;
 import com.testforge.backend.model.User;
@@ -54,7 +54,7 @@ public class ProjectService {
 
     public Project getOwnedProject(Long id) {
         Project project = projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project " + id + " not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Project with ID " + id + " not found"));
         assertOwner(project);
         return project;
     }

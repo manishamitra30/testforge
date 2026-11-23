@@ -1,4 +1,4 @@
-package com.testforge.backend.exception;
+package com.testforge.backend.common.exception;
 
 public class BadRequestException extends RuntimeException {
 
