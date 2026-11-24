@@ -1,0 +1,28 @@
+# Local development. Only the JWT secret has to come from the environment.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/testforge}
+    username: ${DB_USERNAME:testforge}
+    password: ${DB_PASSWORD:testforge}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    persist-authorization: true
+
+logging:
+  level:
+    com.testforge: DEBUG
+
+app:
+  jwt:
+    secret: ${JWT_SECRET}
+    expiration-ms: ${JWT_EXPIRATION_MS:3600000}

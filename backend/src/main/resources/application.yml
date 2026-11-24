@@ -1,30 +1,29 @@
 spring:
   application:
     name: testforge
-  datasource:
-    url: jdbc:postgresql://localhost:5433/testforge
-    username: testforge
-    password: testforge
+  profiles:
+    # dev unless SPRING_PROFILES_ACTIVE says otherwise (set it to prod in production)
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   jpa:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-    properties:
-      hibernate:
-        format_sql: true
   flyway:
     enabled: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true   # adds /actuator/health/liveness and /actuator/health/readiness
 
-app:
-  jwt:
-    secret: ${JWT_SECRET}
-    expiration-ms: 3600000
+logging:
+  pattern:
+    level: "%5p [%X{requestId:-}]"
