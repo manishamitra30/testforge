@@ -19,6 +19,7 @@ public class RunLogStore {
     private static final int MAX_RUNS_KEPT = 50;
 
     private final AutomationProperties properties;
+    private final RunEventPublisher publisher;
 
     private final Map<Long, Buffer> buffers = new LinkedHashMap<>() {
         @Override
@@ -32,7 +33,8 @@ public class RunLogStore {
         synchronized (buffers) {
             buffer = buffers.computeIfAbsent(runId, id -> new Buffer(properties.maxLogLines()));
         }
-        buffer.add(line);
+        long offset = buffer.add(line);
+        publisher.log(runId, offset, line);
     }
 
     public Chunk read(Long runId, long from) {
@@ -52,12 +54,14 @@ public class RunLogStore {
             this.capacity = capacity;
         }
 
-        synchronized void add(String line) {
+        synchronized long add(String line) {
+            long offset = firstOffset + lines.size();
             lines.addLast(line);
             while (lines.size() > capacity) {
                 lines.removeFirst();
                 firstOffset++;
             }
+            return offset;
         }
 
         synchronized Chunk read(long from) {
