@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell"
 import { LoginPage, RegisterPage } from "@/pages/AuthPages"
 import PlaceholderPage from "@/pages/PlaceholderPage"
 import ProjectsPage from "@/pages/ProjectsPage"
+import RunLivePage from "@/pages/RunLivePage"
 import TestCasesPage from "@/pages/TestCasesPage"
 import ProtectedRoute from "@/routes/ProtectedRoute"
 
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/test-cases" element={<TestCasesPage />} />
           <Route path="/test-runs" element={<PlaceholderPage title="Test Runs" />} />
+          <Route path="/runs/:id" element={<RunLivePage />} />
           <Route path="/defects" element={<PlaceholderPage title="Defects" />} />
         </Route>
       </Route>
