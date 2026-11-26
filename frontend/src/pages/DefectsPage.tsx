@@ -8,7 +8,6 @@ import NativeSelect from "@/components/NativeSelect"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import ProjectPicker from "@/features/dashboard/ProjectPicker"
 import DefectBoard from "@/features/defects/DefectBoard"
 import DefectTable from "@/features/defects/DefectTable"
 import { useChangeDefectStatus } from "@/features/defects/useChangeDefectStatus"
@@ -28,7 +27,7 @@ function initialView(): View {
 }
 
 export default function DefectsPage() {
-  const { projects, projectId, selectProject, isLoading } = useSelectedProject()
+  const { projectId, isLoading } = useSelectedProject()
   const [view, setView] = useState<View>(initialView)
   const [severity, setSeverity] = useState<Severity | "ALL">("ALL")
   const severityFilter = severity === "ALL" ? undefined : severity
@@ -116,7 +115,6 @@ export default function DefectsPage() {
             <option value="MEDIUM">Medium</option>
             <option value="LOW">Low</option>
           </NativeSelect>
-          <ProjectPicker projects={projects} projectId={projectId} onChange={selectProject} />
         </div>
       </div>
 

@@ -4,6 +4,8 @@ import { LoginPage, RegisterPage } from "@/pages/AuthPages"
 import DashboardPage from "@/pages/DashboardPage"
 import DefectsPage from "@/pages/DefectsPage"
 import ProjectsPage from "@/pages/ProjectsPage"
+import SettingsPage from "@/pages/SettingsPage"
+import SuitesPage from "@/pages/SuitesPage"
 import RunLivePage from "@/pages/RunLivePage"
 import TestCasesPage from "@/pages/TestCasesPage"
 import TestRunsPage from "@/pages/TestRunsPage"
@@ -22,6 +24,8 @@ export default function App() {
           <Route path="/test-cases" element={<TestCasesPage />} />
           <Route path="/test-runs" element={<TestRunsPage />} />
           <Route path="/runs/:id" element={<RunLivePage />} />
+          <Route path="/suites" element={<SuitesPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/defects" element={<DefectsPage />} />
         </Route>
       </Route>

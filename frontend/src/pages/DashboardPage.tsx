@@ -27,7 +27,6 @@ import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import ProjectPicker from "@/features/dashboard/ProjectPicker"
 import { useSelectedProject } from "@/hooks/useSelectedProject"
 import type { Run } from "@/types/run"
 import type { Severity } from "@/types/dashboard"
@@ -111,7 +110,7 @@ function Kpi({ label, value, icon: Icon }: { label: string; value: string; icon:
 }
 
 export default function DashboardPage() {
-  const { projects, projectId, selectProject, isLoading } = useSelectedProject()
+  const { projectId, isLoading } = useSelectedProject()
   const enabled = projectId !== null
   const id = projectId as number
 
@@ -151,7 +150,6 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Quality at a glance for the selected project.</p>
         </div>
-        <ProjectPicker projects={projects} projectId={projectId} onChange={selectProject} />
       </div>
 
       {failed && (
