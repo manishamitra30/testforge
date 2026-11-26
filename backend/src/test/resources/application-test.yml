@@ -1,0 +1,23 @@
+# Used by the integration and API tests (@ActiveProfiles("test")).
+# The database comes from a Testcontainers PostgreSQL started by the tests, so no datasource is set here.
+app:
+  jwt:
+    # Test-only signing key (base64). It protects nothing; never reuse it anywhere else.
+    secret: dGVzdGZvcmdlLXRlc3Qtb25seS1zaWduaW5nLWtleS0wMTIzNDU2Nzg5LWFiY2RlZg==
+    expiration-ms: 3600000
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        generate_statistics: true   # lets a test count SQL statements (N+1 guard)
+
+management:
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: WARN
+    com.testforge: WARN
