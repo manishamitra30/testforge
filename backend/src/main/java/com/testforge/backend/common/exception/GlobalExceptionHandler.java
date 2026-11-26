@@ -87,6 +87,11 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> unexpected(Exception ex, HttpServletRequest req) {
+        for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
+            if (cause.getClass().getSimpleName().equals("PropertyReferenceException")) {
+                return build(HttpStatus.BAD_REQUEST, "Invalid sort or filter property", req, Map.of());
+            }
+        }
         log.error("Unhandled exception on {} {}", req.getMethod(), req.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", req, Map.of());
     }
