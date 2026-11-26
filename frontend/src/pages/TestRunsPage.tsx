@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { keepPreviousData, useQuery } from "@tanstack/react-query"
 import { Link, useNavigate } from "react-router-dom"
 import { FolderKanban, Play } from "lucide-react"
@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import NativeSelect from "@/components/NativeSelect"
-import ProjectPicker from "@/features/dashboard/ProjectPicker"
+import NewRunDialog from "@/features/runs/NewRunDialog"
 import { useSelectedProject } from "@/hooks/useSelectedProject"
 import type { RunStatus } from "@/types/run"
 
@@ -27,9 +27,14 @@ function formatDate(iso: string) {
 
 export default function TestRunsPage() {
   const navigate = useNavigate()
-  const { projects, projectId, selectProject, isLoading } = useSelectedProject()
+  const { projectId, isLoading } = useSelectedProject()
   const [page, setPage] = useState(0)
   const [status, setStatus] = useState<RunStatus | "ALL">("ALL")
+
+  // Back to the first page when the project changes in the top bar.
+  useEffect(() => {
+    setPage(0)
+  }, [projectId])
 
   const runsQuery = useQuery({
     queryKey: ["runs", projectId, page],
@@ -79,14 +84,7 @@ export default function TestRunsPage() {
             <option value="FAILED">Failed</option>
             <option value="ABORTED">Aborted</option>
           </NativeSelect>
-          <ProjectPicker
-            projects={projects}
-            projectId={projectId}
-            onChange={(id) => {
-              setPage(0)
-              selectProject(id)
-            }}
-          />
+          <NewRunDialog projectId={projectId} />
         </div>
       </div>
 
