@@ -1,39 +1,18 @@
-import { useEffect, useRef } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useEffect, useRef, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link, useParams } from "react-router-dom"
+import { toast } from "sonner"
 import { getErrorMessage } from "@/api/client"
-import { fetchRun } from "@/api/runs"
-import { PriorityBadge } from "@/components/badges"
-import { Badge } from "@/components/ui/badge"
-import { buttonVariants } from "@/components/ui/button"
+import { abortRun, fetchRun } from "@/api/runs"
+import { RunStatusBadge } from "@/components/RunBadges"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import LogDefectDialog from "@/features/runs/LogDefectDialog"
+import ResultRow from "@/features/runs/ResultRow"
 import { useRunSocket, type SocketState } from "@/hooks/useRunSocket"
-import type { ResultStatus, RunStatus } from "@/types/run"
-
-const green = "border-green-200 bg-green-100 text-green-800 dark:border-green-900 dark:bg-green-950 dark:text-green-200"
-const red = "border-red-200 bg-red-100 text-red-800 dark:border-red-900 dark:bg-red-950 dark:text-red-200"
-const amber = "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
-const blue = "border-blue-200 bg-blue-100 text-blue-800 dark:border-blue-900 dark:bg-blue-950 dark:text-blue-200"
-const slate = "border-slate-200 bg-slate-100 text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
-
-const runStyles: Record<RunStatus, string> = {
-  QUEUED: slate,
-  RUNNING: `${blue} animate-pulse`,
-  IN_PROGRESS: blue,
-  COMPLETED: green,
-  FAILED: red,
-  ABORTED: amber,
-}
-
-const resultStyles: Record<ResultStatus, string> = {
-  PASSED: green,
-  FAILED: red,
-  BLOCKED: amber,
-  SKIPPED: slate,
-  NOT_RUN: slate,
-}
+import type { RunResult } from "@/types/run"
 
 const connectionText: Record<SocketState, string> = {
   idle: "Not streaming",
@@ -85,9 +64,22 @@ function Stat({ title, value }: { title: string; value: string | number }) {
 
 function RunLiveView({ runId }: { runId: number }) {
   const runQuery = useQuery({ queryKey: ["run", runId], queryFn: () => fetchRun(runId) })
+  const queryClient = useQueryClient()
+  const [defectFor, setDefectFor] = useState<RunResult | null>(null)
   const run = runQuery.data?.run
   const active = run?.status === "QUEUED" || run?.status === "RUNNING" || run?.status === "IN_PROGRESS"
-  const { lines, connection, error } = useRunSocket(runId, active)
+  const manual = run?.type === "MANUAL"
+  const { lines, connection, error } = useRunSocket(runId, active && !manual)
+
+  const abort = useMutation({
+    mutationFn: () => abortRun(runId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["run", runId] })
+      queryClient.invalidateQueries({ queryKey: ["runs"] })
+      toast.success("Run aborted")
+    },
+    onError: (e) => toast.error(getErrorMessage(e)),
+  })
 
   if (runQuery.isLoading) return <Skeleton className="h-64 w-full rounded-xl" />
   if (runQuery.isError || !run || !runQuery.data) {
@@ -101,7 +93,8 @@ function RunLiveView({ runId }: { runId: number }) {
   const s = run.summary
   const executed = s.total - s.notRun
   const pct = s.total === 0 ? 0 : Math.round((executed / s.total) * 100)
-  const waiting = active && executed === 0
+  const editable = manual && (run.status === "IN_PROGRESS" || run.status === "COMPLETED")
+  const waiting = active && !manual && executed === 0
 
   return (
     <div className="space-y-6">
@@ -109,19 +102,29 @@ function RunLiveView({ runId }: { runId: number }) {
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-semibold">{run.name}</h1>
-            <Badge variant="outline" className={runStyles[run.status]}>
-              {label(run.status)}
-            </Badge>
+            <RunStatusBadge status={run.status} />
           </div>
           <p className="text-sm text-muted-foreground">
             Suite: {run.suiteName} - {label(run.type)} - triggered by {run.triggeredBy ?? "unknown"}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span className={`size-2 rounded-full ${connectionDot[connection]}`} />
-            {connectionText[connection]}
-          </span>
+          {!manual && (
+            <span className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className={`size-2 rounded-full ${connectionDot[connection]}`} />
+              {connectionText[connection]}
+            </span>
+          )}
+          {manual && run.status === "IN_PROGRESS" && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={abort.isPending}
+              onClick={() => window.confirm("Abort this run? Its results can no longer be changed.") && abort.mutate()}
+            >
+              Abort run
+            </Button>
+          )}
           <Link to="/test-runs" className={buttonVariants({ variant: "outline", size: "sm" })}>
             All runs
           </Link>
@@ -160,14 +163,16 @@ function RunLiveView({ runId }: { runId: number }) {
         <Stat title="Not run" value={s.notRun} />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Live output</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <LogPanel lines={lines} />
-        </CardContent>
-      </Card>
+      {!manual && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Live output</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LogPanel lines={lines} />
+          </CardContent>
+        </Card>
+      )}
 
       <div className="rounded-xl border bg-background">
         <Table>
@@ -176,33 +181,35 @@ function RunLiveView({ runId }: { runId: number }) {
               <TableHead>Test case</TableHead>
               <TableHead>Priority</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Message</TableHead>
+              {editable ? (
+                <>
+                  <TableHead>Record result</TableHead>
+                  <TableHead>Comment</TableHead>
+                </>
+              ) : (
+                <>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Message</TableHead>
+                </>
+              )}
+              <TableHead className="text-right" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {runQuery.data.results.map((result) => (
-              <TableRow key={result.id}>
-                <TableCell className="font-medium">{result.title}</TableCell>
-                <TableCell>
-                  <PriorityBadge priority={result.priority} />
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={resultStyles[result.status]}>
-                    {label(result.status)}
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {result.durationMs ? `${(result.durationMs / 1000).toFixed(1)}s` : "-"}
-                </TableCell>
-                <TableCell className="max-w-md truncate text-muted-foreground" title={result.errorMessage ?? ""}>
-                  {result.errorMessage ?? result.comment ?? "-"}
-                </TableCell>
-              </TableRow>
+              <ResultRow
+                key={`${result.id}-${result.status}-${result.comment ?? ""}`}
+                runId={runId}
+                result={result}
+                editable={editable}
+                onLogDefect={setDefectFor}
+              />
             ))}
           </TableBody>
         </Table>
       </div>
+
+      <LogDefectDialog result={defectFor} onClose={() => setDefectFor(null)} />
     </div>
   )
 }
