@@ -1,0 +1,26 @@
+# Render Blueprint for the backend. Create it with: Render dashboard -> New -> Blueprint -> pick this repo.
+services:
+  - type: web
+    name: testforge-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Environment variables are also passed as build args: "false" builds the small image
+      # without Chromium, which is what a free instance has the memory for.
+      - key: WITH_AUTOMATION
+        value: "false"
+      - key: DB_URL          # jdbc:postgresql://<neon-host>/<db>?sslmode=require
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: JWT_SECRET      # Render generates a random Base64 value
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS   # your Vercel URL, e.g. https://testforge.vercel.app
+        sync: false

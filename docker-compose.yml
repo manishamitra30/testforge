@@ -1,3 +1,10 @@
+# Day-to-day development:   docker compose up -d                  -> only the database (port 5433)
+# Whole stack in Docker:    docker compose --profile full up --build
+#                           frontend http://localhost:3000   backend http://localhost:8080
+#
+# Secrets and addresses come from the environment or a .env file (see .env.example).
+# The defaults below are for LOCAL use only.
+
 services:
   db:
     image: postgres:15
@@ -5,11 +12,67 @@ services:
     environment:
       POSTGRES_DB: testforge
       POSTGRES_USER: testforge
-      POSTGRES_PASSWORD: testforge
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-testforge}
     ports:
       - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testforge -d testforge"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - testforge-net
+
+  backend:
+    profiles: ["full"]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        WITH_AUTOMATION: ${WITH_AUTOMATION:-true}
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/testforge
+      DB_USERNAME: testforge
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-testforge}
+      # Base64 key. This default is a public dev key: set your own JWT_SECRET for anything real.
+      JWT_SECRET: ${JWT_SECRET:-dGVzdGZvcmdlLWxvY2FsLWRldi1zZWNyZXQta2V5LTAxMjM0NTY3ODlhYmNkZWY=}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8080:8080"
+    shm_size: "1gb"   # Chromium needs a roomy /dev/shm for automated runs
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - testforge-net
+
+  frontend:
+    profiles: ["full"]
+    build:
+      context: ./frontend
+      args:
+        # Addresses the BROWSER uses to reach the backend (compiled into the bundle).
+        VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:8080}
+        VITE_WS_URL: ${PUBLIC_WS_URL:-}
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - testforge-net
+
+networks:
+  testforge-net:
 
 volumes:
   pgdata:

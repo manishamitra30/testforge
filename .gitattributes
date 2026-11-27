@@ -1,0 +1,7 @@
+* text=auto
+
+# Keep LF where Linux containers read the file
+Dockerfile text eol=lf
+*.sh text eol=lf
+mvnw text eol=lf
+nginx.conf text eol=lf
