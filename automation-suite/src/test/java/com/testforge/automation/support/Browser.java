@@ -26,6 +26,18 @@ public final class Browser {
             options.addArguments("--headless=new");
         }
         options.addArguments("--window-size=1920,1080", "--disable-notifications");
+        // Container settings (set by backend/Dockerfile); harmless when the variables are absent.
+        if ("true".equalsIgnoreCase(System.getenv("TESTFORGE_NO_SANDBOX"))) {
+            options.addArguments("--no-sandbox", "--disable-dev-shm-usage");
+        }
+        String chromeBin = System.getenv("CHROME_BIN");
+        if (chromeBin != null && !chromeBin.isBlank()) {
+            options.setBinary(chromeBin);
+        }
+        String driverPath = System.getenv("CHROMEDRIVER_PATH");
+        if (driverPath != null && !driverPath.isBlank()) {
+            System.setProperty("webdriver.chrome.driver", driverPath);
+        }
         options.setExperimentalOption("prefs", Map.<String, Object>of(
                 "credentials_enable_service", false,
                 "profile.password_manager_enabled", false,

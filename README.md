@@ -55,3 +55,21 @@ Get-Content docs\demo-data.sql | docker exec -i testforge-db psql -U testforge -
 | Defects board | Test cases |
 |---|---|
 | ![Defects board](docs/screenshots/defects-board.png) | ![Test cases](docs/screenshots/test-cases.png) |
+<!-- section-9 -->
+## Run with Docker
+
+```bash
+docker compose up -d                       # database only (for development)
+docker compose --profile full up --build   # database + backend + frontend
+```
+
+Frontend http://localhost:3000, backend http://localhost:8080/actuator/health. Settings and the JWT secret come from the
+environment or a `.env` file (see `.env.example`).
+
+## CI/CD and deployment
+
+[![CI](https://github.com/manishamitra30/testforge/actions/workflows/ci.yml/badge.svg)](https://github.com/manishamitra30/testforge/actions/workflows/ci.yml)
+
+GitHub Actions runs the backend tests with a JaCoCo coverage gate, the frontend lint, type check and build, and a full
+Docker stack start-up on every push and pull request. The app deploys to Neon (PostgreSQL), Render (backend) and Vercel
+(frontend). See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the steps and `scripts/smoke-test.ps1` to verify a deployment.

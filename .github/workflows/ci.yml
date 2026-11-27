@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (tests + coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MIN_COVERAGE: "60"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+
+      # Integration tests start PostgreSQL through Testcontainers; the runner already has Docker.
+      - name: Test and package
+        run: sh ./mvnw -B -ntp verify
+
+      - name: Coverage gate
+        run: |
+          python3 - <<'PY'
+          import csv, os, sys
+          missed = covered = 0
+          with open("target/site/jacoco/jacoco.csv") as f:
+              for row in csv.DictReader(f):
+                  missed += int(row["INSTRUCTION_MISSED"])
+                  covered += int(row["INSTRUCTION_COVERED"])
+          pct = 100 * covered / (missed + covered)
+          minimum = float(os.environ["MIN_COVERAGE"])
+          print(f"Instruction coverage: {pct:.1f}% (minimum {minimum:.0f}%)")
+          sys.exit(0 if pct >= minimum else 1)
+          PY
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-reports
+          path: |
+            backend/target/site/jacoco
+            backend/target/surefire-reports
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      # "build" runs tsc -b first, so this is also the type check.
+      - run: npm run build
+
+  docker:
+    name: Docker builds and starts
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate the compose file
+        run: docker compose --profile full config --quiet
+
+      # Lean backend image (no Chromium) keeps this step quick; it proves all three containers
+      # build, become healthy, run Flyway against a fresh database and serve the SPA.
+      - name: Build and start the whole stack
+        env:
+          WITH_AUTOMATION: "false"
+        run: docker compose --profile full up -d --build --wait --wait-timeout 300
+
+      - name: Smoke test
+        run: |
+          curl -fsS http://localhost:8080/actuator/health
+          echo
+          curl -fsS -o /dev/null http://localhost:3000/
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/dashboard)" = "200"
+          curl -fsS -X POST http://localhost:8080/api/auth/register \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"ciuser","email":"ci@example.com","password":"secret123"}'
+          echo
+          curl -si -X OPTIONS http://localhost:8080/api/projects \
+            -H 'Origin: http://localhost:3000' \
+            -H 'Access-Control-Request-Method: GET' | grep -i 'access-control-allow-origin: http://localhost:3000'
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose --profile full logs --no-color
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose --profile full down -v
+
+      # The image the compose file builds by default, with Chromium for automated runs.
+      - name: Build the full backend image (with browser)
+        run: docker build -f backend/Dockerfile --build-arg WITH_AUTOMATION=true -t testforge-backend:ci .
