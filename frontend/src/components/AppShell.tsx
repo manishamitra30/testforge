@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
+import { useSpotlight } from "@/hooks/useSpotlight"
 import {
   Bug,
   FlaskConical,
@@ -33,6 +34,7 @@ export default function AppShell() {
   const { projectId } = useSelectedProject()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  useSpotlight()
   // Keep the chosen project when moving between pages.
   const search = projectId !== null ? `?project=${projectId}` : ""
 
@@ -43,11 +45,11 @@ export default function AppShell() {
   }
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <aside className="hidden w-60 shrink-0 flex-col border-r bg-background md:flex">
-        <div className="flex h-14 items-center gap-2 border-b px-4 text-lg font-semibold">
-          <FlaskConical className="size-5 text-primary" />
-          TestForge
+    <div className="flex min-h-screen">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+        <div className="brand flex h-14 items-center gap-2 border-b border-sidebar-border px-4 font-mono text-lg font-semibold tracking-tight">
+          <FlaskConical className="brand-icon size-5 text-sidebar-primary" />
+          TestForge<span className="text-sidebar-primary">_</span>
         </div>
         <nav className="flex flex-1 flex-col gap-1 p-3" aria-label="Main">
           {navItems.map(({ to, label, icon: Icon }) => (
@@ -56,10 +58,10 @@ export default function AppShell() {
               to={{ pathname: to, search }}
               className={({ isActive }) =>
                 cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "nav-link flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all hover:translate-x-1",
                   isActive
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-[0_0_18px_-4px_var(--glow)]"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )
               }
             >
@@ -71,7 +73,7 @@ export default function AppShell() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 items-center gap-3 border-b bg-background px-4 sm:px-6">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background/80 px-4 backdrop-blur sm:px-6">
           <div className="flex items-center gap-2 font-semibold md:hidden">
             <FlaskConical className="size-5 text-primary" />
             <span className="hidden sm:inline">TestForge</span>
@@ -84,7 +86,7 @@ export default function AppShell() {
               <p className="text-xs text-muted-foreground">{user?.role}</p>
             </div>
             <div
-              className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground"
+              className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-orange-500 text-sm font-semibold text-primary-foreground ring-2 ring-primary/30"
               aria-hidden
             >
               {user?.username.charAt(0).toUpperCase()}
@@ -96,7 +98,7 @@ export default function AppShell() {
           </div>
         </header>
 
-        <nav className="flex gap-1 overflow-x-auto border-b bg-background px-3 py-2 md:hidden" aria-label="Main (compact)">
+        <nav className="flex gap-1 overflow-x-auto border-b bg-background/90 px-3 py-2 md:hidden" aria-label="Main (compact)">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}
