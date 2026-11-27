@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 import { login, register as registerUser } from "@/api/auth"
 import { getErrorMessage } from "@/api/client"
+import { createSampleProject } from "@/api/sample"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -211,7 +212,13 @@ export function RegisterPage() {
     setSubmitting(true)
     try {
       await registerUser(values)
-      signIn(await login({ username: values.username, password: values.password }))
+      const auth = await login({ username: values.username, password: values.password })
+      try {
+        await createSampleProject(auth.token)
+      } catch {
+        // the sample project is optional; the account is already created
+      }
+      signIn(auth)
       toast.success("Account created")
       navigate("/projects", { replace: true })
     } catch (error) {

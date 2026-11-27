@@ -3,11 +3,12 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useForm } from "react-hook-form"
 import { Link } from "react-router-dom"
-import { FolderKanban, Plus } from "lucide-react"
+import { FolderKanban, Plus, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 import { z } from "zod"
 import { getErrorMessage } from "@/api/client"
 import { createProject, fetchProjects } from "@/api/projects"
+import { createSampleProject } from "@/api/sample"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -91,6 +92,24 @@ function NewProjectDialog() {
   )
 }
 
+function SampleProjectButton() {
+  const queryClient = useQueryClient()
+  const mutation = useMutation({
+    mutationFn: () => createSampleProject(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      toast.success("Sample project added")
+    },
+    onError: (error) => toast.error(getErrorMessage(error)),
+  })
+  return (
+    <Button variant="outline" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+      <Sparkles className="mr-1 size-4" />
+      {mutation.isPending ? "Adding..." : "Load a sample project"}
+    </Button>
+  )
+}
+
 export default function ProjectsPage() {
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["projects"],
@@ -137,6 +156,7 @@ export default function ProjectsPage() {
                 Create your first project to start adding test cases.
               </p>
             </div>
+            <SampleProjectButton />
           </CardContent>
         </Card>
       )}
