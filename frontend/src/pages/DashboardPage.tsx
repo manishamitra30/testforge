@@ -25,13 +25,15 @@ import {
 import { fetchRuns } from "@/api/runs"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import CountUp from "@/components/CountUp"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/context/AuthContext"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useSelectedProject } from "@/hooks/useSelectedProject"
 import type { Run } from "@/types/run"
 import type { Severity } from "@/types/dashboard"
 
-const PRIMARY = "#4f46e5"
+const PRIMARY = "#d19a00"
 const SEVERITY_COLORS: Record<Severity, string> = {
   CRITICAL: "#dc2626",
   HIGH: "#f97316",
@@ -39,9 +41,7 @@ const SEVERITY_COLORS: Record<Severity, string> = {
   LOW: "#16a34a",
 }
 
-function percent(value: number) {
-  return `${Math.round(value)}%`
-}
+
 
 function shortDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" })
@@ -93,15 +93,27 @@ function Empty({ text }: { text: string }) {
   return <p className="py-10 text-center text-sm text-muted-foreground">{text}</p>
 }
 
-function Kpi({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Percent }) {
+function Kpi({
+  label,
+  value,
+  suffix,
+  icon: Icon,
+}: {
+  label: string
+  value: number
+  suffix?: string
+  icon: typeof Percent
+}) {
   return (
-    <Card>
+    <Card className="kpi">
       <CardContent className="flex items-center justify-between py-5">
         <div>
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-3xl font-semibold tabular-nums">{value}</p>
+          <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+          <p className="text-3xl font-semibold tabular-nums">
+            <CountUp value={value} suffix={suffix} />
+          </p>
         </div>
-        <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <div className="kpi-icon flex size-11 items-center justify-center rounded-xl bg-primary/15 text-primary">
           <Icon className="size-5" />
         </div>
       </CardContent>
@@ -111,6 +123,7 @@ function Kpi({ label, value, icon: Icon }: { label: string; value: string; icon:
 
 export default function DashboardPage() {
   const { projectId, isLoading } = useSelectedProject()
+  const { user } = useAuth()
   const enabled = projectId !== null
   const id = projectId as number
 
@@ -145,10 +158,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="hero relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-2xl border p-6">
         <div>
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Quality at a glance for the selected project.</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Quality overview</p>
+          <h1 className="gradient-text text-3xl font-semibold">Welcome back, {user?.username}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Quality at a glance for the selected project.</p>
+        </div>
+        <div className="flex gap-2">
+          <Link to={{ pathname: "/test-runs", search: `?project=${projectId}` }} className={buttonVariants()}>
+            <Play className="mr-1 size-4" />
+            New run
+          </Link>
+          <Link
+            to={{ pathname: "/defects", search: `?project=${projectId}` }}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <Bug className="mr-1 size-4" />
+            Defects
+          </Link>
         </div>
       </div>
 
@@ -158,15 +185,15 @@ export default function DashboardPage() {
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {summary.isLoading ? (
           Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
         ) : (
           <>
-            <Kpi label="Pass rate" value={percent(summary.data?.passRate ?? 0)} icon={Percent} />
-            <Kpi label="Total cases" value={String(summary.data?.totalCases ?? 0)} icon={ListChecks} />
-            <Kpi label="Runs this week" value={String(runsThisWeek)} icon={Play} />
-            <Kpi label="Open defects" value={String(summary.data?.openDefects ?? 0)} icon={Bug} />
+            <Kpi label="Pass rate" value={Math.round(summary.data?.passRate ?? 0)} suffix="%" icon={Percent} />
+            <Kpi label="Total cases" value={summary.data?.totalCases ?? 0} icon={ListChecks} />
+            <Kpi label="Runs this week" value={runsThisWeek} icon={Play} />
+            <Kpi label="Open defects" value={summary.data?.openDefects ?? 0} icon={Bug} />
           </>
         )}
       </div>
